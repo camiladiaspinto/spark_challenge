@@ -151,7 +151,7 @@ object App {
       .write
       .mode("overwrite")
       .option("compression", "gzip")
-      .parquet("C:\\Users\\camil\\IdeaProjects\\spark-challenge\\output\\googleplaystore_metrics")
+      .parquet("C:\\Users\\camil\\IdeaProjects\\spark_challenge\\output\\googleplaystore_metrics")
 
     df
   }

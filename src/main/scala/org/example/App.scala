@@ -67,7 +67,7 @@ object App {
       .option("quote", "\"")
       .option("escape", "\\")
       .option("delimiter", "§")
-      .csv("C:\\Users\\camil\\IdeaProjects\\spark-challenge\\output\\best_apps")
+      .csv("C:\\Users\\camil\\IdeaProjects\\spark_challenge\\output\\best_apps")
 
     df
 
@@ -133,7 +133,7 @@ object App {
       .write
       .mode("overwrite")
       .option("compression", "gzip")
-      .parquet("C:\\Users\\camil\\IdeaProjects\\spark-challenge\\output\\googleplaystore_cleaned")
+      .parquet("C:\\Users\\camil\\IdeaProjects\\spark_challenge\\output\\googleplaystore_cleaned")
 
     df
   }
@@ -151,7 +151,7 @@ object App {
       .write
       .mode("overwrite")
       .option("compression", "gzip")
-      .parquet("C:\\Users\\camil\\IdeaProjects\\spark-challenge\\output\\googleplaystore_cleaned")
+      .parquet("C:\\Users\\camil\\IdeaProjects\\spark-challenge\\output\\googleplaystore_metrics")
 
     df
   }

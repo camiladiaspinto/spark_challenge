@@ -14,6 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spark.version>3.4.3</spark.version>
     <scala.version>2.12.17</scala.version>
+
   </properties>
 
   <dependencies>
@@ -40,8 +41,51 @@
       <version>${scala.version}</version>
     </dependency>
 
-
+    <!-- https://mvnrepository.com/artifact/org.scalatest/scalatest -->
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_2.12</artifactId>
+      <version>3.2.19</version>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
+  <build>
+    <plugins>
+
+      <plugin>
+
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>4.8.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- plugin needed to add jvm argument to run tests from maven-->
+      <plugin>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-maven-plugin</artifactId>
+        <version>2.0.0</version>
+        <configuration>
+          <argLine>--add-exports java.base/sun.nio.ch=ALL-UNNAMED</argLine>
+        </configuration>
+        <executions>
+          <execution>
+            <id>test</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
 
 </project>

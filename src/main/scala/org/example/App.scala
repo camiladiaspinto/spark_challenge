@@ -1,7 +1,8 @@
 package org.example
 
-import org.apache.spark.sql.{SparkSession,DataFrame}
-import org.apache.spark.sql.functions.{to_date,first,array_distinct,filter, avg, col, collect_list, count, desc, max, max_by, regexp_extract, to_timestamp, when}
+import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.functions.{ avg, col, collect_set,count, date_format, desc, first, max, regexp_replace, to_timestamp, when}
+
 /**
  * @author ${Camila Pinto}
  */
@@ -12,18 +13,10 @@ object App {
       .appName("SparkChallenge")
       .getOrCreate()
 
-    val google_playstore = spark.read
-      .option("header", value = true)
-      .option("quote", "\"")
-      .option("escape", "\\")
-      .csv("src/main/datasets/googleplaystore.csv")
 
-    val google_playstore_reviews = spark.read
-      .option("header", value = true)
-      .option("quote", "\"")
-      .option("escape", "\\")
-      .csv("src/main/datasets/googleplaystore_user_reviews.csv")
-    //google_playstore_reviews.show()
+    val google_playstore = read_csv(spark, "src/main/datasets/googleplaystore.csv")
+    val google_playstore_reviews = read_csv(spark, "src/main/datasets/googleplaystore_user_reviews.csv")
+
 
     val df_1 = ex_1(google_playstore_reviews)
 
@@ -33,22 +26,30 @@ object App {
     val df_4 = ex_4(df_1, df_3)
     val df_5 = ex_5(df_1, df_3)
 
-    df_1.show()
-    df_2.show()
-    df_3.show()
-    df_4.show()
-    df_5.show()
+    //df_1.show()
+   // df_2.show()
+   // df_3.show()
+   // df_4.show()
+   // df_5.show()
     spark.stop()
   }
 
+  def read_csv(spark: SparkSession, path: String): DataFrame = {
+    spark.read
+      .option("header", "true")
+      .option("quote", "\"")
+      .option("escape", "\\")
+      .csv(path)
+  }
 
   def ex_1(inputDf: DataFrame): DataFrame = {
     val df = inputDf
       .na.replace("Sentiment_Polarity", Map("nan" -> "0"))
       .withColumn("Sentiment_Polarity", col("Sentiment_Polarity").cast("Double"))
       .groupBy("App")
-      .avg("Sentiment_Polarity")
-      .withColumnRenamed("avg(Sentiment_Polarity)", "Average_SentimentPolarity")
+      .agg(
+        avg("Sentiment_Polarity").as("Average_Sentiment_Polarity")
+      )
     df
   }
 
@@ -59,8 +60,7 @@ object App {
       .withColumn("Rating", col("Rating").cast("Double"))
       .filter("Rating >= 4.0")
       .orderBy(desc("Rating"))
-
-    df
+    df.coalesce(1)
       .write
       .mode("overwrite")
       .option("header", "true")
@@ -68,68 +68,63 @@ object App {
       .option("escape", "\\")
       .option("delimiter", "§")
       .csv("C:\\Users\\camil\\IdeaProjects\\spark_challenge\\output\\best_apps")
-
     df
-
   }
 
   def ex_3(inputDf: DataFrame): DataFrame = {
-    val conversionRate = 0.9 // Taxa de conversão de dólares para euros
 
     val df = inputDf
-      //remover mais missing values
+
+      //substituir valores nulos
       .na.replace("Reviews", Map("null" -> "0"))
       .na.replace("Rating", Map("NaN" -> "0"))
-      .na.replace("Size", Map("Varies with device" -> "0"))
+      .na.replace("Size", Map("Varies with device" -> "null"))
 
-
-      .withColumnRenamed("Category", "Categories")
+      //formato dataframe
       .withColumn("Rating", col("Rating").cast("Double"))
       .withColumn("Reviews", col("Reviews").cast("Long"))
+
+      //se acabar com M faz a conversão para double, se acabar com k multiplica por 1024
       .withColumn("Size",
-        when(col("Size").contains("M"),
-          regexp_extract(col("Size"), "([0-9]+\\.?[0-9]*)", 1).cast("Double")) // Para valores terminados em M, extrai e converte diretamente
-          .otherwise(
-            regexp_extract(col("Size"), "([0-9]+\\.?[0-9]*)", 1).cast("Double") / 1024 // Para outros valores, assume que estão em KB e divide por 1024 para converter para MB
-          )
+        when(col("Size").endsWith("M"), regexp_replace(col("Size"), "M", "").cast("Double"))
+          .when(col("Size").endsWith("k"), regexp_replace(col("Size"), "k", "").cast("Double") / 1024)
+          .otherwise(null.asInstanceOf[Double])
       )
-      .withColumnRenamed("Content Rating", "Content_Rating")
-      .withColumn("Last Updated", to_date(col("Last Updated"), "MMMM d, yyyy"))
       .withColumn("Price",
-        when(col("Price").contains("$"),
-          regexp_extract(col("Price"), "([0-9]+\\.?[0-9]*)", 1).cast("Double") * conversionRate) // Remove o símbolo $ e converte para euros
-          .otherwise(0.0) // Define 0 para valores que não começam com $
+        when(col("Price").startsWith("$"), regexp_replace(col("Price"), "\\$", "").cast("Double") * 0.9)
+          .otherwise(0.0)
       )
-      .withColumnRenamed("Last Updated", "Last_Updated")
-      .withColumnRenamed("Current Ver", "Current_Version")
-      .withColumnRenamed("Android Ver", "Minimum_Android_Version")
+      // Remover milissegundos do timestamp
+      .withColumn("Last Updated", date_format(to_timestamp(col("Last Updated"), "MMMM d, yyyy"), "yyyy-MM-dd HH:mm:ss"))
 
 
-    val groupedDf = df
+    // agrupar por App para dataframe
+    val resultDf = df
       .groupBy("App")
       .agg(
-        collect_list("Categories").as("All_Categories"),
-        avg("Rating").as("Average_Rating"),
+        //collect_set para garantir que todas as categorias da app são guardados num array sem duplicados
+        collect_set("Category").as("Categories"),
+
+        first("Rating").as("Rating"),
         max("Reviews").as("Max_Reviews"),
-        first("Genres").as("Genres"),
+        first("Size").as("Size"),
+        first("Installs").as("Installs"),
         first("Type").as("Type"),
         first("Price").as("Price"),
-        first("Content_Rating").as("Content_Rating"),
-        first("Last_Updated").as("Last_Updated"),
-        first("Current_Version").as("Current_Version"),
-        first("Minimum_Android_Version").as("Minimum_Android_Version")
+        first("Content Rating").as("Content_Rating"),
+        //Converter string de Genres para array de strings, sem duplicados
+        collect_set("Genres").as("Genres"),
+        first("Last Updated").as("Last_Updated"),
+        first("Current Ver").as("Current_Version"),
+        first("Android Ver").as("Minimum_Android_Version")
       )
-      .withColumn("Categories", array_distinct(col("All_Categories")))
-      .drop("All_Categories")
-
-    groupedDf
-
+    resultDf
   }
 
   def ex_4(inputDf1: DataFrame, inputDf2: DataFrame): DataFrame = {
     val df = inputDf1
-      .join(inputDf2, Seq("App"), "left")
-    df
+      .join(inputDf2, Seq("App"))
+    df.coalesce(1)
       .write
       .mode("overwrite")
       .option("compression", "gzip")
@@ -144,10 +139,10 @@ object App {
       .groupBy("Genres")
       .agg(
         count(col("Genres")).as("Count"),
+        avg("Rating").as("Average_Rating"),
+        avg("Average_Sentiment_Polarity").as("Average_Sentiment_Polarity")
       )
-        //avg(col("Average_Sentiment_Polarity")).as("Average_Sentiment_Polarity")
-
-    df
+    df.coalesce(1)
       .write
       .mode("overwrite")
       .option("compression", "gzip")

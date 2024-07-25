@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spark.version>3.4.3</spark.version>
     <scala.version>2.12.17</scala.version>
-    <scalest.version>3.2.19</scalest.version>
+    <scalatest.version>3.2.19</scalatest.version>
 
   </properties>
 
@@ -46,7 +46,7 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_2.12</artifactId>
-      <version>${scalest.version}</version>
+      <version>${scalatest.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -55,7 +55,15 @@
     <plugins>
 
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.22.2</version>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
 
+      <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
         <version>4.8.1</version>

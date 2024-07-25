@@ -69,7 +69,6 @@
         </executions>
       </plugin>
 
-      <!-- plugin needed to add jvm argument to run tests from maven-->
       <plugin>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest-maven-plugin</artifactId>

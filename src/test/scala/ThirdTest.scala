@@ -8,7 +8,7 @@ class ThirdTest extends AnyFunSuite with SparkSessionHelper {
 
   test("ex_3 should correctly transform the DataFrame") {
 
-    // Dados de entrada
+
     val inputDf = Seq(
       ("Photo Editor & Candy Camera & Grid & ScrapBook", "ART_AND_DESIGN", "4.1", "159", "19M", "10,000+", "Free", "0", "Everyone", "Art & Design", "January 7, 2018", "1.0.0", "4.0.3 and up"),
       ("Another App", "PHOTOGRAPHY", "3.5", "100", "15M", "5,000+", "Paid", "$2.99", "Teen", "Photography", "February 15, 2022", "2.0.0", "5.0 and up")
